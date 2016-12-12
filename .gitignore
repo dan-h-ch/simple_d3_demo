@@ -1,5 +1,11 @@
 # data
 data/data.js
+data/_User20161208.json
+server/_User20161208.json
+data/rawd.js
+
+# osx
+.DS_Store
 
 # Logs
 logs

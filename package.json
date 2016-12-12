@@ -1,0 +1,19 @@
+{
+  "name": "simple_d3_demo",
+  "version": "1.0.0",
+  "description": "d3_demo",
+  "main": "demo.js",
+  "scripts": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dan-h-ch/simple_d3_demo.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/dan-h-ch/simple_d3_demo/issues"
+  },
+  "homepage": "https://github.com/dan-h-ch/simple_d3_demo#readme"
+}
