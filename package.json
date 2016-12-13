@@ -15,5 +15,13 @@
   "bugs": {
     "url": "https://github.com/dan-h-ch/simple_d3_demo/issues"
   },
-  "homepage": "https://github.com/dan-h-ch/simple_d3_demo#readme"
+  "homepage": "https://github.com/dan-h-ch/simple_d3_demo#readme",
+  "dependencies": {
+    "body-parser": "^1.15.2",
+    "bookshelf": "^0.10.2",
+    "express": "^4.14.0",
+    "jquery": "^3.1.1",
+    "knex": "^0.12.6",
+    "pg": "^6.1.1"
+  }
 }
