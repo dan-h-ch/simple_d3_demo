@@ -1,3 +1,14 @@
+// Get location data from db
+var appId = "";
+var jsKey = "";
+var serverURL = "";
+getLocationData(appId, jsKey, serverURL, function(rawD){
+  console.log("Got " + rawD.length);
+  doIt(rawD);
+});
+
+function doIt(rawD) {
+
 // define some dimensions for the projection
 var width = 960;
 var height = 500;
@@ -135,3 +146,4 @@ svg.selectAll(".pin")
     return "translate(" + projection(loc) + ")"
   })
 
+}
