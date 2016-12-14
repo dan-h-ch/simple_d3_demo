@@ -3,11 +3,16 @@ var appId = "";
 var jsKey = "";
 var serverURL = "";
 getLocationData(appId, jsKey, serverURL, function(rawD){
-  console.log("Got " + rawD.length);
-  doIt(rawD);
+  console.log(rawD);
+  drawMap(rawD);
+}, function(error){
+  $("#status-msg").text(error);
 });
 
-function doIt(rawD) {
+function drawMap(rawD) {
+
+// Remove loading text
+$("#status-msg").html("");
 
 // define some dimensions for the projection
 var width = 960;
@@ -36,9 +41,9 @@ svg.selectAll("path")
   .enter()
   .append("path")
   .attr("d", path)
-  .style("stroke", "#000")
+  .style("stroke", "silver")
   .style("stroke-width", "1")
-  .style("fill", "lightgray")
+  .style("fill", "white")
 
 // next steps are about organizing data into usable form - first is pop density plot
 // if persistent db is available it will probably be better to have BI tables and batch updates
@@ -86,13 +91,13 @@ var filteredData = filteredData.filter((entry) => {
 var today = new Date()
 // this is a hack - rebuild or bring in a libarary for this
 var ageCalc = function(birthdayFromData) {
-  return (today - new Date(birthdayFromData))/(1000*60*60*24*365)
+  return (today - birthdayFromData)/(1000*60*60*24*365)
 }
 
 // add age to user level records
 for (var n = 0; n < filteredData.length; n++) {
   var entry = filteredData[n]
-  entry.age = ageCalc(entry.birthday.$date)
+  entry.age = ageCalc(entry.birthday)
 }
 
 // find uper and lower bonds for age
@@ -126,7 +131,7 @@ var popMin = cityStateArr.reduce((memo, val) => {
 // define linear scale for popsize
 var popSize = d3.scale.linear()
   .domain([popMin, popMax])
-  .range([5,30])
+  .range([4,15])
   .clamp(true);
 
 svg.selectAll(".pin")
@@ -137,12 +142,12 @@ svg.selectAll(".pin")
     return popSize(d.pop)
   })
   .attr("fill", function(d) {
-    return "slateblue"
+    return "#8C88FF"
     // return color(d.age)
   })
   .style("fill-opacity", 0.3)
   .attr("transform", function(d) {
-    var loc = [d.location[0], d.location[1]]
+    var loc = [d.location.longitude, d.location.latitude]
     return "translate(" + projection(loc) + ")"
   })
 
