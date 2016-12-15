@@ -1,6 +1,6 @@
-var getLocationData = function(appId, jsKey, serverURL, callback){
+var getLocationData = function(appId, jsKey, serverURL, callback, error){
 
-  console.log("got getLocationData request");
+  $("#status-msg").text("Loading data from server...");
 
   Parse.initialize(appId, jsKey);
   Parse.serverURL = serverURL;
@@ -11,21 +11,19 @@ var getLocationData = function(appId, jsKey, serverURL, callback){
 
   var process = function(skip) {
     var query = new Parse.Query("_User");
+    query.exists("location");
     if (skip) {query.skip(skip);}
     query.limit(limit);
     return query.find().then(function(results){
-
-      console.log("found " + results.length);
-
       DATA = DATA.concat(results);
       skip += limit;
       if (results.length == limit) {
         process(skip);
       } else {
-        callback(DATA);
+        callback(JSON.parse(JSON.stringify(DATA)));
       }
-    }, function(error){
-      console.log(error);
+    }, function(err){
+      error(err.code + ", " + err.message);
     })
   }
 
