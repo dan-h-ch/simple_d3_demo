@@ -1,5 +1,6 @@
 # data
-data/rawd.js
+server/config/config.js
+public/config.js
 
 # osx
 .DS_Store
