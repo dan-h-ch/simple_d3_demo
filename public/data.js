@@ -3,7 +3,6 @@
 // var jsKey = "";
 // var serverURL = "";
 getLocationData(appId, jsKey, serverURL, function(rawD){
-  console.log(rawD);
   drawMap(rawD);
 }, function(error){
   $("#status-msg").text(error);
@@ -72,18 +71,7 @@ for (var key in cityStateObj) {
   cityStateArr.push( {name: key, pop: cityStateObj[key].pop, location: cityStateObj[key].location})
 }
 
-// lets see what the genders come up
-var genderObj = {}
 
-rawD.forEach((entry) => {
-  if (genderObj[entry.gender]) {
-    genderObj[entry.gender]++
-  } else {
-    genderObj[entry.gender] = 1
-  }
-})
-
-console.log(genderObj)
 
 // this was a filter on entry.location data can prob refactor to just use filter with city, state (above)
 var filteredData = rawD.filter((entry) => {
@@ -169,19 +157,63 @@ svg.selectAll(".pin")
 var width2 = 960;
 var height2 = 500;
 
+// lets see what the genders come up
+var genderObj = {}
+
+// take raw data and create a count by gender
+rawD.forEach((entry) => {
+  if (genderObj[entry.gender]) {
+    genderObj[entry.gender]++
+  } else {
+    genderObj[entry.gender] = 1
+  }
+})
+
+// create an array to fit data into var pointsWanted points
+// only focusing on male/female/lgbt for infographic
+var totalPoints = genderObj.Male + genderObj.Female + genderObj.LGBT
+// not this impact genderArr size and thus time to prep data
+// as this number gets larger javascript decimal math causes problem
+// don't go over 4000
+var pointsWanted = 1000 
+
+// create array that will be used for d3 plotting
+var genderArr = []
+
+// fill the array
+for (var key in genderObj) {
+  if (key === "Male" || key === "Female" || key === "LGBT") {
+    var count = Math.round(genderObj[key]/totalPoints*pointsWanted)
+    console.log(key, genderObj[key]/totalPoints*100)
+    for (var n = 0; n < count; n++) {
+      genderArr.push({gender: key})
+    }
+  }
+}
+
+// assigned an order so d3 can order the data - this is not actually needed since we populate one genderArr one gender at a time
+genderArr.forEach((entry) => {
+  if (entry.gender === 'Female') {
+    entry.genderOrder = 1
+  } else if (entry.gender === 'Male') {
+    entry.genderOrder = 2
+  } else if (entry.gender === 'LGBT') {
+    entry.genderOrder = 3
+  } else {
+    entry.genderOrder = 4
+  }
+})
+
 var svg2 = d3.select("body")
   .append("svg")
   .attr("width", width2)
   .attr("height", height2);
 
-svg2.selectAll(".pin")
-  .data(rawD)
-  .enter().append("circle", ".pin")
+svg2.selectAll(".gender_dot")
+  .data(genderArr)
+  .enter().append("circle", ".gender_dot")
   .sort(function(a,b) {
-    console.log(a.gender)
-    console.log(a.gender.length)
-    console.log(b.gender)
-    return a.gender.length - b.gender.length
+    return a.genderOrder - b.genderOrder
   })
   .attr("r", 3)
   .attr("cy", function(d, i) {return 4 + Math.floor(i/100) * 8})
