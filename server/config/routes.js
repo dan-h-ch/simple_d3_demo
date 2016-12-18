@@ -15,6 +15,7 @@ module.exports = function(app, express){
     var skip = 0;
     const limit = 1000;
 
+    // need to clean up this query to not send everything over
     var process = function(skip) {
       var query = new Parse.Query("_User");
       query.exists("location");
@@ -36,11 +37,10 @@ module.exports = function(app, express){
     process(skip);
   }
 
-  app.get('/us/city_state', function(req, res) {
+  app.get('/data', function(req, res) {
     console.log('trying to get something')
 
     getLocationData(config.appId, config.jsKey, config.serverURL, function(rawD){
-      console.log(rawD);
       res.status(200).send(JSON.stringify(rawD));
     }, function(error){
       console.log(error);
