@@ -39,6 +39,8 @@ fetch('/data')
     drawData(res)
   })
 
+var methinkOrdPal_7 = ['#6563A4', '#FCAB53', '#50D2C2', '#8C88FF', '#FF3366', '#BA77FF', '#B5BABF']
+
 function drawData(rawData) {
 
 // Remove loading text
@@ -306,7 +308,7 @@ svg2.selectAll(".gender_dot")
     var radius = 200;
 
     var pieColor = d3.scale.ordinal()
-      .range(d3.scale.category10().range());
+      .range(methinkOrdPal_7);
 
     var svg = d3.select("body")
       .append('svg')
@@ -333,7 +335,7 @@ svg2.selectAll(".gender_dot")
     // converts data to data that can be used to make a pie chart
     var pie = d3.layout.pie()
       .value(function(d) {return d.count})
-      .sort(null)
+      .sort(function(a, b) {return a.order - b.order})
 
     console.log('formattedData', formattedData)
 
@@ -348,7 +350,6 @@ svg2.selectAll(".gender_dot")
       .attr('fill', function(d, i) {
         return pieColor(d.data.ageBin)
       })
-      .sort(function(a, b) {return a.order - b.order})
 
     var text = svg.select(".labels").selectAll("text")
       .data(pie(formattedData), key)
@@ -357,17 +358,18 @@ svg2.selectAll(".gender_dot")
       .attr("dy", ".35em")
       .attr("transform", function(d) {
         var c = arc.centroid(d);
+        console.log(d.data, c)
+        var xVal = ((d.endAngle + d.startAngle)/2 > Math.PI) ? -radius : radius;
         var x = c[0];
         var y = c[1];
         // pythagorean theorem for hypotenuse
         var h = Math.sqrt(x*x + y*y);
-        return "translate(" + (x/h * radius*0.9) +  ',' + (y/h * radius*0.9) +  ")"; })
+        return "translate(" + /*(x/h * radius*0.9)*/ xVal +  ',' + (y/h * radius*0.9) +  ")"; })
       .text(function(d) {return `${d.data.ageBin} - ${d.data.percentage}%`;})
       .attr("text-anchor", function(d) {
         // are we past the center?
         return (d.endAngle + d.startAngle)/2 > Math.PI ? "end" : "start";
       })
-      .sort(function(a, b) {return a.order - b.order})
     
   }(ageBinArr)
 
