@@ -299,79 +299,154 @@ svg2.selectAll(".gender_dot")
 //       return "gray"
 //     }
 //   })
+  var randomData = function() {
+    ageBinArr.forEach((entry) => {
+      console.log(entry)
+      console.log(entry.count)
+      console.log(Math.floor(entry.count * Math.random()))
+      entry.count = Math.floor(entry.count * Math.random() * 2)
+    })
+    return ageBinArr
+  }
 
+  var pieContainerWidth = 960;
+  var pieContainerHeight = 500;
+  var pieRadius = 200;
 
+  var pieColor = d3.scale.ordinal()
+    .range(methinkOrdPal_7);
+
+  var pieContainer = d3.select("#age")
+    .append('svg')
+    .attr("width", pieContainerWidth)
+    .attr("height", pieContainerHeight)
+    .append('g')
+    .attr('transform', 'translate(' + (pieContainerWidth/2) + ',' + (pieContainerHeight/2) + ')')
+
+  pieContainer.append("g")
+    .attr("class", "slices");
+  pieContainer.append("g")
+    .attr("class", "labels");
+  pieContainer.append("g")
+    .attr("class", "lines");
+
+  var arc = d3.svg.arc()
+    .outerRadius(pieRadius*0.8)
+    .innerRadius(pieRadius*0.2);
+
+  var labelArc = d3.svg.arc()
+    .outerRadius(pieRadius*0.9)
+    .innerRadius(pieRadius*0.9);
+
+  // converts data to data that can be used to make a pie chart
+  var pie = d3.layout.pie()
+    .value(function(d) {return d.count})
+    .sort(function(a, b) {return a.order - b.order})
+      
   var drawPie = function(formattedData) {
 
-    var width = 960;
-    var height = 500;
-    var radius = 200;
-
-    var pieColor = d3.scale.ordinal()
-      .range(methinkOrdPal_7);
-
-    var svg = d3.select("body")
-      .append('svg')
-      .attr("width", width)
-      .attr("height", height)
-      .append('g')
-      .attr('transform', 'translate(' + (width/2) + ',' + (height/2) + ')')
-
-    svg.append("g")
-      .attr("class", "slices");
-    svg.append("g")
-      .attr("class", "labels");
-    svg.append("g")
-      .attr("class", "lines");
-
-    var arc = d3.svg.arc()
-      .outerRadius(radius*0.8)
-      .innerRadius(radius*0.2);
-
-    var labelArc = d3.svg.arc()
-      .outerRadius(radius*0.9)
-      .innerRadius(radius*0.9);
-
-    // converts data to data that can be used to make a pie chart
-    var pie = d3.layout.pie()
-      .value(function(d) {return d.count})
-      .sort(function(a, b) {return a.order - b.order})
 
     console.log('formattedData', formattedData)
 
     // create slices
-    var slice = svg.select('.slices').selectAll('path')
-      .data(pie(formattedData))
-      .enter()
+    var slice = pieContainer.select('.slices').selectAll('path.slice')
+      .data(pie(formattedData), key);
+
+    slice.enter()
       .append('path')
-      .attr('d', arc)
       .style("stroke", "silver")
       .style("stroke-width", "1")
-      .attr('fill', function(d, i) {
+      .attr('fill', function(d) {
         return pieColor(d.data.ageBin)
       })
+      .attr('class', 'slice');
 
-    var text = svg.select(".labels").selectAll("text")
-      .data(pie(formattedData), key)
-      .enter()
+    slice   
+      .transition().duration(1000)
+      .attrTween("d", function(d) {
+        this._current = this._current || d;
+        var interpolate = d3.interpolate(this._current, d);
+        this._current = interpolate(0);
+        return function(t) {
+          return arc(interpolate(t));
+        };
+      })
+
+    slice.exit()
+      .remove();
+
+    // label
+    var text = pieContainer.select(".labels").selectAll("text")
+      .data(pie(formattedData), key);
+
+    text.enter()
       .append("text")
       .attr("dy", ".35em")
-      .attr("transform", function(d) {
-        var c = arc.centroid(d);
-        console.log(d.data, c)
-        var xVal = ((d.endAngle + d.startAngle)/2 > Math.PI) ? -radius : radius;
-        var x = c[0];
-        var y = c[1];
-        // pythagorean theorem for hypotenuse
-        var h = Math.sqrt(x*x + y*y);
-        return "translate(" + /*(x/h * radius*0.9)*/ xVal +  ',' + (y/h * radius*0.9) +  ")"; })
-      .text(function(d) {return `${d.data.ageBin} - ${d.data.percentage}%`;})
-      .attr("text-anchor", function(d) {
-        // are we past the center?
-        return (d.endAngle + d.startAngle)/2 > Math.PI ? "end" : "start";
+      .text(function(d) {
+        return `${d.data.ageBin} (${d.data.percentage}%)`;
+      });
+
+    // label animation
+    text.transition().duration(1000)
+      .attrTween("transform", function(d) {
+        this._current = this._current || d;
+        var interpolate = d3.interpolate(this._current, d);
+        this._current = interpolate(0);
+        return function(t) {
+          var d2 = interpolate(t);
+          var pos = labelArc.centroid(d2);
+          pos[0] = pieRadius * ((d.endAngle + d.startAngle)/2 < Math.PI ? 1 : -1);
+          return "translate("+ pos +")";
+        };
       })
+      .styleTween("text-anchor", function(d){
+        this._current = this._current || d;
+        var interpolate = d3.interpolate(this._current, d);
+        this._current = interpolate(0);
+        return function(t) {
+          var d2 = interpolate(t);
+          return (d.endAngle + d.startAngle)/2 < Math.PI ? "start":"end";
+        };
+      });
+
+    text.exit()
+      .remove();
+
+    // lines to label
+    var polyline = pieContainer.select(".lines").selectAll("polyline")
+      .data(pie(formattedData), key)
+      
+    polyline.enter()
+      .append("polyline")
+      .attr("stroke", 'silver')
+      .attr("stroke-width", "1.5")
+      .attr("fill", "none")
     
-  }(ageBinArr)
+    // line animation
+    polyline.transition().duration(1000)
+      .attrTween("points", function(d){
+        this._current = this._current || d;
+        var interpolate = d3.interpolate(this._current, d);
+        this._current = interpolate(0);
+        return function(t) {
+          var d2 = interpolate(t);
+          var pos = labelArc.centroid(d2);
+          pos[0] = pieRadius * 0.95 * ((d.endAngle + d.startAngle)/2 < Math.PI ? 1 : -1);
+          return [arc.centroid(d2), labelArc.centroid(d2), pos];
+        };      
+      });
+
+    polyline.exit()
+      .remove();
+    
+  }
+
+  drawPie(ageBinArr)
+
+  d3.select("#refresh")
+    .on("click", function(){
+      drawPie(randomData());
+    });
 
 
 }
