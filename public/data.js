@@ -31,6 +31,12 @@ usMapContainer.selectAll("path")
   .style("stroke-width", "1")
   .style("fill", "white")
 
+// gender container
+var genderContainer = d3.select("#gender")
+  .append("svg")
+  .attr("width", width)
+  .attr("height", height);
+
 fetch('/data')
   .then(function(res) {
     return res.json()
@@ -64,11 +70,12 @@ function drawData(rawData) {
   // store in objects
   var cityStateObj = {}
   var ageBinObj = {}
-
+  var genderObj = {}
 
   // arrays since d3 needs arrays
   var cityStateArr = [];
   var ageBinArr = [];
+  var newGenderArr = [];
 
   // getting todays date
   var today = new Date();
@@ -112,6 +119,15 @@ function drawData(rawData) {
     }
   })
 
+  // take raw data and create a count by gender - throws error when i pass in filteredData???
+  rawData.forEach((entry) => {
+    if (genderObj[entry.gender]) {
+      genderObj[entry.gender]++
+    } else {
+      genderObj[entry.gender] = 1
+    }
+  })
+
   // populate age array for plot
   for (var key in ageBinObj) {
     ageBinObj[key].percentage = Math.round((ageBinObj[key].count/totalEntries)*10000)/100
@@ -121,6 +137,13 @@ function drawData(rawData) {
   // populate locaiton array for plot
   for (var key in cityStateObj) {
     cityStateArr.push( {name: key, pop: cityStateObj[key].pop, location: cityStateObj[key].location})
+  }
+
+  // fill the gender array
+  for (var key in genderObj) {
+    if (key === 'Male' || key ==='Female' || key === 'LGBT') {
+      newGenderArr.push({gender: key, count: genderObj[key]})
+    }
   }
 
   // function for drawCityState
@@ -161,115 +184,26 @@ function drawData(rawData) {
 
   drawCityState(cityStateArr)
 
-
-  // creating new something
-  var width2 = 960;
-  var height2 = 500;
-
-  // lets see what the genders come up
-  var genderObj = {}
-
-  // take raw data and create a count by gender
-  rawData.forEach((entry) => {
-    if (genderObj[entry.gender]) {
-      genderObj[entry.gender]++
-    } else {
-      genderObj[entry.gender] = 1
-    }
-  })
-
   // create an array to fit data into var pointsWanted points
   // only focusing on male/female/lgbt for infographic
   var totalPoints = genderObj.Male + genderObj.Female + genderObj.LGBT
-  // not this impact genderArr size and thus time to prep data
-  // as this number gets larger javascript decimal math causes problem
-  // don't go over 4000
-  var pointsWanted = 1000 
-
-  // create array that will be used for d3 plotting
-  var genderArr = []
-
-  var newGenderArr = []
-
-  // fill the array
-  for (var key in genderObj) {
-    if (key === "Male" || key === "Female" || key === "LGBT") {
-      var count = Math.round(genderObj[key]/totalPoints*pointsWanted)
-      console.log(key, genderObj[key]/totalPoints*100)
-      for (var n = 0; n < count; n++) {
-        genderArr.push({gender: key})
-      }
-    }
-    if (key === 'Male' || key ==='Female') {
-      newGenderArr.push({gender: key, count: genderObj[key]})
-    }
-  }
-
-  // assigned an order so d3 can order the data - this is not actually needed since we populate one genderArr one gender at a time
-  genderArr.forEach((entry) => {
-    if (entry.gender === 'Female') {
-      entry.genderOrder = 1
-    } else if (entry.gender === 'Male') {
-      entry.genderOrder = 2
-    } else if (entry.gender === 'LGBT') {
-      entry.genderOrder = 3
-    } else {
-      entry.genderOrder = 4
-    }
-  })
 
   // gender stuff
-  var svg2 = d3.select("body")
-    .append("svg")
-    .attr("width", width2)
-    .attr("height", height2);
-
-  var genderMax = Math.max(newGenderArr[0].count, newGenderArr[1].count)
-  var genderMin = Math.min(newGenderArr[0].count, newGenderArr[1].count)
+  var genderMax = newGenderArr.reduce((memo, val) => {return Math.max(memo, val.count)}, -Infinity)
+  var genderMin = newGenderArr.reduce((memo, val) => {return Math.min(memo, val.count)}, Infinity)
 
   var genderSize = d3.scale.linear()
     .domain([genderMin, genderMax])
     .range([100,150])
     .clamp(true);
 
-  var svg3 = d3.select("body")
-    .append("svg")
-    .attr("width", width2)
-    .attr("height", height2);
-
-  var genderSize3 = d3.scale.linear()
-    .domain([genderMin, genderMax])
-    .range([200,350])
-    .clamp(true);
-
-  svg3.selectAll(".gender_image")
-    .data(newGenderArr)
-    .enter()
-    .append("svg:image", ".gender_image")
-    .attr("xlink:href", function(d) {return d.gender === "Male" ? "http://www.a-listinternational.com/wp-content/uploads/2016/06/brad-pitt-doesn-t-really-look-much-like-brad-pitt-in-these-photos-727400.jpg" : "https://s-media-cache-ak0.pinimg.com/736x/8f/3b/9c/8f3b9cda3783cf34a8354d7122e4a91c.jpg"})
-    .attr("width", function(d) {return genderSize3(d.count)})
-    .attr("height", function(d) {return genderSize3(d.count)})
-    .attr("y", function(d) {return height/2 - genderSize3(d.count)/2})
-    .attr("x", function(d, i) {return (i+1)*width/3 - genderSize3(d.count)/2})
-    .attr("fill", function(d) {
-      if (d.gender === 'Female') {
-        return "pink"
-      } else if (d.gender === 'Male') {
-        return "lightblue"
-      } else if (d.gender === 'LGBT') {
-        return "green"
-      } else {
-        return "gray"
-      }
-    })
-
-  svg2.selectAll(".gender_dot")
+  genderContainer.selectAll(".gender_dot")
     .data(newGenderArr)
     .enter()
     .append("circle", ".gender_dot")
     .attr("r", function(d) {return genderSize(d.count)})
     .attr("cy", height/2)
-    .attr("cx", function(d, i) {return (i+1)*width/3})
+    .attr("cx", function(d, i) {return (i+1)*width/4})
     .attr("fill", function(d) {
       if (d.gender === 'Female') {
         return "pink"
@@ -282,15 +216,34 @@ function drawData(rawData) {
       }
     })
 
-    var randomData = function() {
-      ageBinArr.forEach((entry) => {
-        console.log(entry)
-        console.log(entry.count)
-        console.log(Math.floor(entry.count * Math.random()))
-        entry.count = Math.floor(entry.count * Math.random() * 2)
-      })
-      return ageBinArr
-    }
+  var genderImgSize = d3.scale.linear()
+    .domain([genderMin, genderMax])
+    .range([200,350])
+    .clamp(true);
+
+  genderContainer.selectAll(".gender_image")
+    .data(newGenderArr)
+    .enter()
+    .append("svg:image", ".gender_image")
+    .attr("xlink:href", function(d) {return d.gender === "Male" ? "http://cdn.mysitemyway.com/etc-mysitemyway/icons/legacy-previews/icons/magic-marker-icons-people-things/115809-magic-marker-icon-people-things-people-man4.png" : "http://cdn.mysitemyway.com/etc-mysitemyway/icons/legacy-previews/icons/magic-marker-icons-people-things/115822-magic-marker-icon-people-things-people-woman1.png"})
+    .attr("width", function(d) {return genderImgSize(d.count)})
+    .attr("height", function(d) {return genderImgSize(d.count)})
+    .attr("y", function(d) {return height/2 - genderImgSize(d.count)/2})
+    .attr("x", function(d, i) {return (i+1)*width/4 - genderImgSize(d.count)/2})
+
+
+  genderContainer.selectAll(".gender_text")
+    .data(newGenderArr)
+    .enter()
+    .append("text")
+    .text(function(d) {
+      return `${d.gender} (${Math.round(d.count/totalPoints*10000)/100}%)`
+    })
+    .attr("dy", ".35em")
+    .attr("y", function(d) {return height/2 - (genderSize(d.count) + 15)})
+    .attr("x", function(d, i) {return (i+1)*width/4})
+    .attr("text-anchor", "middle")
+    .attr("font-family", "Helvetica")  
 
     var pieContainerWidth = 960;
     var pieContainerHeight = 500;
@@ -427,6 +380,15 @@ function drawData(rawData) {
 
     drawPie(ageBinArr)
 
+    // function to create some random data from current data
+    var randomData = function() {
+      ageBinArr.forEach((entry) => {
+        entry.count = Math.floor(entry.count * Math.random() * 5)
+      })
+      return ageBinArr
+    }
+
+    // button for refreshing data
     d3.select("#refresh")
       .on("click", function(){
         drawPie(randomData());
